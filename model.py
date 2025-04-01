@@ -31,19 +31,9 @@ def generate_response(prompt):
         return_dict_in_generate=True,        
     )
 
-    #full_ids = outputs.sequences[0].tolist()
-    #print("Full token IDs (prompt + generated):", full_ids)
-    #print("Full decoded output:", tokenizer.decode(full_ids, skip_special_tokens=False))
-
     generated_ids = outputs.sequences[0, inputs["input_ids"].shape[-1]:]
-    # # Filter junk from start of response
-    # response_ids = []
-    # skip_initial = True
-    # for token in generated_ids:
-    #     if skip_initial and token in [151644, 151645, 944]:
-    #         continue
-    #     skip_initial = False
-    #     response_ids.append(token)
+
+    # Filter junk from start of response
     print("Generated token IDs (sliced):", generated_ids)
     return tokenizer.decode(generated_ids, skip_special_tokens=True)
 
