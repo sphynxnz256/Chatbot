@@ -21,28 +21,45 @@ model = AutoModelForCausalLM.from_pretrained(
 
 # Generate a repsonse from a prompt
 def generate_response(prompt):
-    inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=100,
-        temperature=0.7,
-        do_sample=True,
-        pad_token_id=tokenizer.eos_token_id,    
-        return_dict_in_generate=True,        
-    )
+    try:
+        # Format promt in Qwen's chat template
+        # Format prompt manually
+        formatted_prompt = (
+            f"<|im_start|>system\nYou are a helpful chatbot.<|im_end>\n"
+            f"<|im_start|>user\n{prompt}<|im_end>\n"
+            f"<|im_start|>assistant"
+        )
 
-    generated_ids = outputs.sequences[0, inputs["input_ids"].shape[-1]:]
+        inputs = tokenizer(formatted_prompt, return_tensors="pt").to("cuda")
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=512,
+            temperature=0.7,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id,          
+        )
 
-    # Filter junk from start of response
-    print("Generated token IDs (sliced):", generated_ids)
-    return tokenizer.decode(generated_ids, skip_special_tokens=True)
+        # Decode and extract assistant's response
+        full_response = tokenizer.decode(outputs[0], skip_special_tokens=False)
+        # Extract text after <|im_start|>assistant and before <|im_end|>
+        assistant_marker = "<|im_start|>assistant"
+        end_marker = "<|im_end|>"
+        if assistant_marker in full_response:
+            # Get everything after assistant marker
+            response = full_response.split(assistant_marker, 1)[1]
+            # Trim at end marker if present
+            if end_marker in response:
+                response = response.split(end_marker, 1)[0]
+            response = response.strip()
+        else:
+            response = full_response.strip()
+        return response
+    except Exception as e:
+        return f"Error: {e}"
 
 # Check CUDA
-print("CUDA Available:", torch.cuda.is_available())
-print("Device", torch.cuda.get_device_name(0))
-
-# Test with a sample prompt
-#prompt = "You are a helpful chatbot. Answer this: What is the capital of France?"
-prompt = "<|im_start|>system\nYou are a helpful chatbot.<|im_end|>\n<|im_start|>user\nWhat is the capital of France?<|im_end|>\n<|im_start|>assistant"
-response = generate_response(prompt)
-print("Model response:", response)
+if torch.cuda.is_available():
+    print("CUDA Available:", torch.cuda.is_available())
+    print("Device", torch.cuda.get_device_name(0))
+else:
+    print("CUDA not availible.")

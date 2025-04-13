@@ -12,7 +12,6 @@ BUTTON_BG = "rgb(60, 60, 60)"           # Medium gray
 BUTTON_PRESSED_BG = "rgb(55, 55, 55)"   # Slightly darker gray for pressed state
 PROMPT_BG = "rgb(60, 60, 60)"           # Lighter gray for prompt box
 
-
 # Create application
 app = QApplication(sys.argv)
 
@@ -72,7 +71,8 @@ extension_layout = QHBoxLayout(extension_box)
 extension_layout.setContentsMargins(0, 0, 10, 10)
 extension_layout.addStretch()
 send_button = QPushButton("Send")
-send_button.setFixedSize(80, 30)
+send_button.setFixedSize(70, 30)
+send_button.setFont(QFont("Arial", 12))
 send_button.setStyleSheet(
     f"QPushButton {{ background-color: {BUTTON_BG}; color: {TEXT_FG}; border: none; border-radius: 5px;}}"
     f"QPushButton:pressed {{ background-color: {BUTTON_PRESSED_BG}; border-radius: 5px;}}"
@@ -84,7 +84,7 @@ input_layout.addWidget(extension_box)
 main_layout.addWidget(input_widget)
 
 # Send button functionality
-def send_message():
+def send_message(get_response_func=None):
     # Get user input
     prompt = user_input.toPlainText().strip()
     if not prompt: # Skip if empty
@@ -96,15 +96,21 @@ def send_message():
 
     # Add prompt as a full-width box with HTML
     prompt_with_breaks = prompt.replace("\n", "<br>")
+    if get_response_func:
+        response = get_response_func(prompt)
+    else:
+        response ="Sorry, something went wrong. Please try again."
+    response_with_breaks = response.replace("\n", "<br>")
     full_message = (
-        f'<b>{prompt_with_breaks}</b><br><br><br>'
-        f'This is a placeholder response to:<br>{prompt_with_breaks}<br><br>'
+        f'<b>{prompt_with_breaks}</b><br><br>'
+        f'{response_with_breaks}<br><br>'
     )
     response_area.append(full_message)
 
 
-send_button.clicked.connect(send_message)
+send_button.clicked.connect(lambda: send_message)
 
 # Show window and start event loop
-window.show()
-sys.exit(app.exec_())
+if __name__ == "__main__":
+    window.show()
+    sys.exit(app.exec_())
