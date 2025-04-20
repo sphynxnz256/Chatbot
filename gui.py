@@ -1,13 +1,13 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject
 from PyQt5.QtGui import QFont
 import pywinstyles
 
 # Color scheme variables (night theme)
 WINDOW_BG = "rgb(30, 30, 30)"           # Dark gray
 TEXT_BG = "rgb(45, 45, 45)"             # Slightly lighter gray
-TEXT_FG = "rgb(255, 255, 255)"          # White
+TEXT_COLOR = "rgb(255, 255, 255)"       # White
 BUTTON_BG = "rgb(60, 60, 60)"           # Medium gray
 BUTTON_PRESSED_BG = "rgb(55, 55, 55)"   # Slightly darker gray for pressed state
 PROMPT_BG = "rgb(60, 60, 60)"           # Lighter gray for prompt box
@@ -25,17 +25,41 @@ pywinstyles.apply_style(window, "dark")
 central_widget = QWidget()
 window.setCentralWidget(central_widget)
 central_widget.setStyleSheet(f"background-color: {WINDOW_BG};")
-main_layout = QVBoxLayout(central_widget)
+main_layout = QHBoxLayout(central_widget)
+main_layout.setSpacing(10)
+
+# Sidebar for conversations (left side)
+sidebar_widget = QWidget()
+sidebar_widget.setFixedWidth(200)
+sidebar_widget.setStyleSheet(
+    f"background-color: {TEXT_BG}; border: none; border-radius: 10px;" 
+)
+sidebar_layout = QVBoxLayout(sidebar_widget)
+sidebar_layout.setContentsMargins(5, 5, 5, 5)
+sidebar_layout.setSpacing(0)
+main_layout.addWidget(sidebar_widget)
+
+# Chat area container (right side)
+chat_area_widget = QWidget()
+chat_area_layout = QVBoxLayout(chat_area_widget)
+chat_area_layout.setContentsMargins(0, 0, 0, 0)
+chat_area_layout.setSpacing(10)
 
 # Response area
-response_area = QTextEdit()
-response_area.setReadOnly(True)
-response_area.setStyleSheet(
-    f"background-color: {TEXT_BG}; color: {TEXT_FG}; border: none; border-radius: 10px;"
+response_area_textbox = QTextEdit()
+response_area_textbox.setReadOnly(True)
+response_area_textbox.setStyleSheet(
+    f"background-color: {TEXT_BG}; color: {TEXT_COLOR}; border: none; border-radius: 10px;"
     f"padding: 5px;"
 )
-response_area.setFont(QFont("Arial", 12))
-main_layout.addWidget(response_area, stretch=1)
+response_area_textbox.setFont(QFont("Arial", 12))
+chat_area_layout.addWidget(response_area_textbox, stretch=1)
+
+# # Label for while waiting for the model to respond
+# thinking_label = QLabel("")
+# thinking_label.setStyleSheet(f"color: {TEXT_COLOR}; padding-left: 5px;")
+# thinking_label.setFont(QFont("Arial", 10, QFont.StyleItalic))
+# main_layout.addWidget(thinking_label)
 
 # Input area
 input_widget = QWidget()
@@ -45,21 +69,21 @@ input_layout.setContentsMargins(0, 0, 0, 0)
 input_layout.setSpacing(0)
 
 # Text box
-user_input = QTextEdit()
-user_input.setMinimumHeight(30)
-user_input.setMaximumHeight(30)
-user_input.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-user_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-user_input.document().documentLayout().documentSizeChanged.connect(
-    lambda: user_input.setMaximumHeight(int(user_input.document().size().height() + 10))
+user_input_textbox = QTextEdit()
+user_input_textbox.setMinimumHeight(30)
+user_input_textbox.setMaximumHeight(30)
+user_input_textbox.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+user_input_textbox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+user_input_textbox.document().documentLayout().documentSizeChanged.connect(
+    lambda: user_input_textbox.setMaximumHeight(int(user_input_textbox.document().size().height() + 10))
 )
-user_input.setStyleSheet(
-    f"background-color: {TEXT_BG}; color: {TEXT_FG}; border: none;"
+user_input_textbox.setStyleSheet(
+    f"background-color: {TEXT_BG}; color: {TEXT_COLOR}; border: none;"
     f"border-top-left-radius: 10px; border-top-right-radius: 10px;"
     f"padding: 5px;"
 )
-user_input.setFont(QFont("Arial", 12))
-input_layout.addWidget(user_input)
+user_input_textbox.setFont(QFont("Arial", 12))
+input_layout.addWidget(user_input_textbox)
 
 # Extention box
 extension_box = QWidget()
@@ -74,43 +98,71 @@ send_button = QPushButton("Send")
 send_button.setFixedSize(70, 30)
 send_button.setFont(QFont("Arial", 12))
 send_button.setStyleSheet(
-    f"QPushButton {{ background-color: {BUTTON_BG}; color: {TEXT_FG}; border: none; border-radius: 5px;}}"
+    f"QPushButton {{ background-color: {BUTTON_BG}; color: {TEXT_COLOR}; border: none; border-radius: 5px;}}"
     f"QPushButton:pressed {{ background-color: {BUTTON_PRESSED_BG}; border-radius: 5px;}}"
 )
 extension_layout.addWidget(send_button)
 extension_box.setFixedHeight(40)
 input_layout.addWidget(extension_box)
 
-main_layout.addWidget(input_widget)
+chat_area_layout.addWidget(input_widget)
+main_layout.addWidget(chat_area_widget)
+
+# Worker to get a response in the background
+class ResponseWorker(QObject):
+    finished = pyqtSignal(str)
+
+    def __init__(self, prompt, get_response_func):
+        super().__init__()
+        self.prompt = prompt
+        self.get_response_func = get_response_func
+
+    def run(self):
+        response = self.get_response_func(self.prompt) if self.get_response_func else "something went wrong."
+        self.finished.emit(response)
 
 # Send button functionality
 def send_message(get_response_func=None):
     # Get user input
-    prompt = user_input.toPlainText().strip()
+    prompt = user_input_textbox.toPlainText().strip()
     if not prompt: # Skip if empty
         return    
     
     # Reset input box
-    user_input.clear()
-    user_input.setMaximumHeight(30)
+    user_input_textbox.clear()
+    user_input_textbox.setMaximumHeight(30)
 
-    # Add prompt as a full-width box with HTML
-    prompt_with_breaks = prompt.replace("\n", "<br>")
-    if get_response_func:
-        response = get_response_func(prompt)
-    else:
-        response ="Sorry, something went wrong. Please try again."
-    response_with_breaks = response.replace("\n", "<br>")
+    # Show temporary "Thinking..." text
     full_message = (
-        f'<b>{prompt_with_breaks}</b><br><br>'
-        f'{response_with_breaks}<br><br>'
+        f'<b>{prompt.replace("\n", "<br>")}</b><br><br>'
+        f'<i>Thinking...</i><br><br>'
     )
-    response_area.append(full_message)
+    response_area_textbox.append(full_message)
+    response_area_textbox.moveCursor(response_area_textbox.textCursor().End)
+    #save current html so we can replace "Thinking..." later
+    current_html = response_area_textbox.toHtml() 
+    
+    # Create worker and thread
+    worker = ResponseWorker(prompt, get_response_func)
+    thread = QThread()
+    worker.moveToThread(thread)
 
+    def on_finished(response):
+        # Replace "Thinking..." with actual response
+        updated_html = current_html.replace("<i>Thinking...</i>", response.replace("\n", "<br>"))
+        response_area_textbox.setHtml(updated_html)
+        thread.quit()
+        thread.wait()
+        worker.deleteLater()
+        thread.deleteLater()
+
+    worker.finished.connect(on_finished)
+    thread.started.connect(worker.run)
+    thread.start()
 
 send_button.clicked.connect(lambda: send_message)
 
-# Show window and start event loop
+# Show window and start event loop (for testing)
 if __name__ == "__main__":
     window.show()
     sys.exit(app.exec_())
