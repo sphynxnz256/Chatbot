@@ -1,8 +1,9 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 import pywinstyles
+from message_handler import process_response
 
 # Color scheme variables (night theme)
 WINDOW_BG = "rgb(30, 30, 30)"           # Dark gray
@@ -55,12 +56,6 @@ response_area_textbox.setStyleSheet(
 response_area_textbox.setFont(QFont("Arial", 12))
 chat_area_layout.addWidget(response_area_textbox, stretch=1)
 
-# # Label for while waiting for the model to respond
-# thinking_label = QLabel("")
-# thinking_label.setStyleSheet(f"color: {TEXT_COLOR}; padding-left: 5px;")
-# thinking_label.setFont(QFont("Arial", 10, QFont.StyleItalic))
-# main_layout.addWidget(thinking_label)
-
 # Input area
 input_widget = QWidget()
 input_widget.setStyleSheet(f"background-color: {WINDOW_BG};")
@@ -108,19 +103,6 @@ input_layout.addWidget(extension_box)
 chat_area_layout.addWidget(input_widget)
 main_layout.addWidget(chat_area_widget)
 
-# Worker to get a response in the background
-class ResponseWorker(QObject):
-    finished = pyqtSignal(str)
-
-    def __init__(self, prompt, get_response_func):
-        super().__init__()
-        self.prompt = prompt
-        self.get_response_func = get_response_func
-
-    def run(self):
-        response = self.get_response_func(self.prompt) if self.get_response_func else "something went wrong."
-        self.finished.emit(response)
-
 # Send button functionality
 def send_message(get_response_func=None):
     # Get user input
@@ -132,33 +114,7 @@ def send_message(get_response_func=None):
     user_input_textbox.clear()
     user_input_textbox.setMaximumHeight(30)
 
-    # Show temporary "Thinking..." text
-    full_message = (
-        f'<b>{prompt.replace("\n", "<br>")}</b><br><br>'
-        f'<i>Thinking...</i><br><br>'
-    )
-    response_area_textbox.append(full_message)
-    response_area_textbox.moveCursor(response_area_textbox.textCursor().End)
-    #save current html so we can replace "Thinking..." later
-    current_html = response_area_textbox.toHtml() 
-    
-    # Create worker and thread
-    worker = ResponseWorker(prompt, get_response_func)
-    thread = QThread()
-    worker.moveToThread(thread)
-
-    def on_finished(response):
-        # Replace "Thinking..." with actual response
-        updated_html = current_html.replace("<i>Thinking...</i>", response.replace("\n", "<br>"))
-        response_area_textbox.setHtml(updated_html)
-        thread.quit()
-        thread.wait()
-        worker.deleteLater()
-        thread.deleteLater()
-
-    worker.finished.connect(on_finished)
-    thread.started.connect(worker.run)
-    thread.start()
+    process_response(response_area_textbox, prompt, get_response_func)
 
 send_button.clicked.connect(lambda: send_message)
 
