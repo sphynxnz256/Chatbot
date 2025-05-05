@@ -1,17 +1,57 @@
+from message_handler import process_response
 import sys
+import pywinstyles
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-import pywinstyles
-from message_handler import process_response
+
 
 # Color scheme variables (night theme)
-WINDOW_BG = "rgb(30, 30, 30)"           # Dark gray
-TEXT_BG = "rgb(45, 45, 45)"             # Slightly lighter gray
-TEXT_COLOR = "rgb(255, 255, 255)"       # White
-BUTTON_BG = "rgb(60, 60, 60)"           # Medium gray
-BUTTON_PRESSED_BG = "rgb(55, 55, 55)"   # Slightly darker gray for pressed state
-PROMPT_BG = "rgb(60, 60, 60)"           # Lighter gray for prompt box
+WINDOW_BG = "rgb(30, 30, 30)"               # Dark gray
+TEXT_BG = "rgb(45, 45, 45)"                 # Slightly lighter gray
+TEXT_COLOR = "rgb(255, 255, 255)"           # White
+PLACEHOLDER_COLOR = "rgb(150, 150, 150)"    # Grey
+BUTTON_BG = "rgb(60, 60, 60)"               # Medium gray
+BUTTON_PRESSED_BG = "rgb(55, 55, 55)"       # Slightly darker gray for pressed state
+PROMPT_BG = "rgb(60, 60, 60)"               # Lighter gray for prompt box
+
+# Adds placeholder text functionality to our textboxes
+class PlaceholderTextEdit(QTextEdit):
+    def __init__(self, placeholder, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.placeholder = placeholder
+
+        self._showing_placeholder = True
+
+        self.setText(self.placeholder)
+        self.setStyleSheet(
+            f"background-color: {TEXT_BG}; color: {PLACEHOLDER_COLOR}; border: none;"
+            f"border-top-left-radius: 10px; border-top-right-radius: 10px;"
+            f"padding: 5px;")
+        self.installEventFilter(self)
+
+    def focusInEvent(self, event):
+        if self._showing_placeholder:
+            self.clear()
+            self.setStyleSheet(
+                f"background-color: {TEXT_BG}; color: {TEXT_COLOR}; border: none;"
+                f"border-top-left-radius: 10px; border-top-right-radius: 10px;"
+                f"padding: 5px;")
+            self._showing_placeholder = False
+        super().focusInEvent(event)
+
+    def focusOutEvent(self, event):
+        if not self.toPlainText().strip():
+            self.setText(self.placeholder)
+            self.setStyleSheet(
+                f"background-color: {TEXT_BG}; color: {PLACEHOLDER_COLOR}; border: none;"
+                f"border-top-left-radius: 10px; border-top-right-radius: 10px;"
+                f"padding: 5px;")
+            self._showing_placeholder = True
+        super().focusOutEvent(event)
+
+    def get_text(self):
+        return "" if self._showing_placeholder else self.toPlainText().strip()
 
 # Create application
 app = QApplication(sys.argv)
@@ -51,8 +91,7 @@ response_area_textbox = QTextEdit()
 response_area_textbox.setReadOnly(True)
 response_area_textbox.setStyleSheet(
     f"background-color: {TEXT_BG}; color: {TEXT_COLOR}; border: none; border-radius: 10px;"
-    f"padding: 5px;"
-)
+    f"padding: 5px;")
 response_area_textbox.setFont(QFont("Arial", 12))
 chat_area_layout.addWidget(response_area_textbox, stretch=1)
 
@@ -64,19 +103,17 @@ input_layout.setContentsMargins(0, 0, 0, 0)
 input_layout.setSpacing(0)
 
 # Text box
-user_input_textbox = QTextEdit()
+user_input_textbox = PlaceholderTextEdit("Ask me anything")
 user_input_textbox.setMinimumHeight(30)
 user_input_textbox.setMaximumHeight(30)
 user_input_textbox.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 user_input_textbox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 user_input_textbox.document().documentLayout().documentSizeChanged.connect(
-    lambda: user_input_textbox.setMaximumHeight(int(user_input_textbox.document().size().height() + 10))
-)
+    lambda: user_input_textbox.setMaximumHeight(int(user_input_textbox.document().size().height() + 10)))
 user_input_textbox.setStyleSheet(
-    f"background-color: {TEXT_BG}; color: {TEXT_COLOR}; border: none;"
+    f"background-color: {TEXT_BG}; color: {PLACEHOLDER_COLOR}; border: none;"
     f"border-top-left-radius: 10px; border-top-right-radius: 10px;"
-    f"padding: 5px;"
-)
+    f"padding: 5px;")
 user_input_textbox.setFont(QFont("Arial", 12))
 input_layout.addWidget(user_input_textbox)
 
@@ -84,8 +121,7 @@ input_layout.addWidget(user_input_textbox)
 extension_box = QWidget()
 extension_box.setStyleSheet(
     f"background-color: {TEXT_BG};"
-    f"border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;"
-)
+    f"border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;")
 extension_layout = QHBoxLayout(extension_box)
 extension_layout.setContentsMargins(0, 0, 10, 10)
 extension_layout.addStretch()
@@ -94,8 +130,7 @@ send_button.setFixedSize(70, 30)
 send_button.setFont(QFont("Arial", 12))
 send_button.setStyleSheet(
     f"QPushButton {{ background-color: {BUTTON_BG}; color: {TEXT_COLOR}; border: none; border-radius: 5px;}}"
-    f"QPushButton:pressed {{ background-color: {BUTTON_PRESSED_BG}; border-radius: 5px;}}"
-)
+    f"QPushButton:pressed {{ background-color: {BUTTON_PRESSED_BG}; border-radius: 5px;}}")
 extension_layout.addWidget(send_button)
 extension_box.setFixedHeight(40)
 input_layout.addWidget(extension_box)

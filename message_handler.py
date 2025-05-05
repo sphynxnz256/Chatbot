@@ -5,6 +5,7 @@ class ResponseSignals(QObject):
     finished = pyqtSignal(str)
     update_thinking = pyqtSignal(str)
 
+# Handles the timer for updating the Thinking... text
 class ThinkingTimerController:
     def __init__(self, update_thinking_text_func):
         self.timer = QTimer()
@@ -51,10 +52,9 @@ def process_response(response_area_textbox, prompt, get_response_func):
     # Show temporary "Thinking..." text
     full_message = (
         f'<b>{prompt.replace("\n", "<br>")}</b><br><br>'
-        f'<i>Thinking</i><br><br>'
-    )
+        f'<i>Thinking</i><br><br>')
     response_area_textbox.append(full_message)
-    response_area_textbox.moveCursor(response_area_textbox.textCursor().End)
+    response_area_textbox.verticalScrollBar().setValue(response_area_textbox.verticalScrollBar().maximum())
     #save current html so we can replace "Thinking..." later
     current_html = response_area_textbox.toHtml()
 
@@ -67,6 +67,7 @@ def process_response(response_area_textbox, prompt, get_response_func):
         if match:
             updated_html = worker.current_html.replace(match.group(0), f'Thinking{dots}')
             response_area_textbox.setHtml(updated_html)
+            response_area_textbox.verticalScrollBar().setValue(response_area_textbox.verticalScrollBar().maximum())
             worker.current_html = updated_html
 
     # Updates the response area textbox once the worker has finished getting a response
@@ -86,6 +87,7 @@ def process_response(response_area_textbox, prompt, get_response_func):
             updated_html = updated_html.replace('Thinking...', response.replace("\n", "<br>"))
 
         response_area_textbox.setHtml(updated_html)
+        response_area_textbox.verticalScrollBar().setValue(response_area_textbox.verticalScrollBar().maximum())
 
     # Create thinking timer instance for thinking animation
     thinking_timer = ThinkingTimerController(update_thinking_text)

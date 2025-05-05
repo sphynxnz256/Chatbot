@@ -24,13 +24,25 @@ model = AutoModelForCausalLM.from_pretrained(
 conversation_history = []
 def generate_response(prompt):
     global conversation_history
+    # System prompt defines the bot's behavior
+    system_prompt = (
+        "You are an intelligent, friendly assistant who gives accurate, direct, and concise answers. "
+        "You understand lighthearted, playful, or humorous questions and respond in kind without overreacting or moralizing. "
+        "If a question is clearly hypothetical or imaginative, feel free to play along creatively unless it involves real harm. "
+        "Avoid disclaimers about being an AI or lacking feelings unless the user directly asks. "
+        "Never assume ill intent from the user unless explicitly stated. "
+        "Prioritize clarity, logic, and relevance over excessive caution or warnings. "
+        "When users present reasoning, engage with it step-by-step. "
+        "Maintain a conversational tone. Be context-aware and avoid boilerplate responses even in long sessions. "
+        "Above all, be helpful, sensible, and engaging without being defensive or overly formal."
+    )
 
     try:
         # Add the new user prompt to the conversation history
         conversation_history.append((f"user\n{prompt}"))
 
         # Start building the formatted prompt from the conversation history
-        formatted_prompt = "<|im_start|>system\nYou are a helpful chatbot.<|im_end>\n"
+        formatted_prompt = f"<|im_start|>system\n{system_prompt}<|im_end>\n"
 
         for item in conversation_history:
             formatted_prompt += f"<|im_start|>\n{item}<|im_end>\n"
@@ -39,13 +51,13 @@ def generate_response(prompt):
         formatted_prompt += "<|im_start|>assistant"
 
         # Check token length, trim if too long
-        max_tokens = 2048
+        max_tokens = 8192
         inputs = tokenizer(formatted_prompt, return_tensors="pt").to("cuda")        
         token_count = len(inputs['input_ids'][0])
         while token_count > max_tokens:
             # Remove the earliest prompt-response pair (first in history)
             conversation_history.pop(0)
-            formatted_prompt = "<|im_start|>system\nYou are a helpful chatbot.<|im_end|>\n"
+            formatted_prompt = f"<|im_start|>system\n{system_prompt}<|im_end>\n"
             for item in conversation_history:
                 formatted_prompt += f"<|im_start|>{item}<|im_end>\n"
             formatted_prompt += f"<|im_start|>assistant"
