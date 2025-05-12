@@ -1,11 +1,12 @@
 from message_handler import process_response
 import sys
 import pywinstyles
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy, QLabel
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from theme import theme_manager
 from placeholder_text_edit import PlaceholderTextEdit
+from hover_button import HoverButton
 
 # Create application
 app = QApplication(sys.argv)
@@ -27,12 +28,24 @@ main_layout.setSpacing(10)
 sidebar_widget = QWidget()
 sidebar_widget.setFixedWidth(200)
 sidebar_widget.setStyleSheet(
-    f"background-color: {theme_manager.TEXT_BG}; border: none; border-radius: 10px;" 
+    f"background-color: {theme_manager.TEXT_BG}; border: none; border-radius: 10px; padding: 5px;" 
 )
 sidebar_layout = QVBoxLayout(sidebar_widget)
 sidebar_layout.setContentsMargins(5, 5, 5, 5)
 sidebar_layout.setSpacing(0)
+sidebar_layout.setAlignment(Qt.AlignTop)
 main_layout.addWidget(sidebar_widget)
+
+# Chatbot Name Label
+chatbot_name_label = QLabel("Chatbot")
+chatbot_name_label.setStyleSheet(f"color: {theme_manager.TEXT_COLOR};")
+chatbot_name_label.setFont(QFont("Arial", 26, QFont.Bold))
+sidebar_layout.addWidget(chatbot_name_label)
+
+# New Chat button
+new_chat_button = HoverButton("+ New Chat")
+new_chat_button.setFont(QFont("Arial", 12))
+sidebar_layout.addWidget(new_chat_button)
 
 # Chat area container (right side)
 chat_area_widget = QWidget()

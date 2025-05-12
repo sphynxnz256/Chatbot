@@ -2,8 +2,7 @@
 This is an AI Chatbot that uses the Qwen/Qwen-7B-Chat model. It is built in python and uses PyQt5 library to build the interface
 
 # ToDo
-- Add the Chatbots name in the lefthand panel
-- Add a new conversation button and functionality
+- Add functionality to + New Chat button
 - Add functionality create a new conversation in database when first prompt is responded to 
 - Add conversation name generation using ai model
 - Add functionality to update the conversation each time a prompt is responded to
