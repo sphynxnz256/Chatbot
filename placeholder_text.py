@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QTextEdit
 from theme import theme_manager
 
 # Adds placeholder text functionality to our the user text box
-class PlaceholderTextEdit(QTextEdit):
+class PlaceholderText(QTextEdit):
     def __init__(self, placeholder, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.placeholder = placeholder

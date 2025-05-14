@@ -5,8 +5,9 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QPushButton, Q
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from theme import theme_manager
-from placeholder_text_edit import PlaceholderTextEdit
+from placeholder_text import PlaceholderText
 from hover_button import HoverButton
+import model
 
 # Create application
 app = QApplication(sys.argv)
@@ -70,7 +71,7 @@ input_layout.setContentsMargins(0, 0, 0, 0)
 input_layout.setSpacing(0)
 
 # Text box
-user_input_textbox = PlaceholderTextEdit("Ask me anything")
+user_input_textbox = PlaceholderText("Ask me anything")
 user_input_textbox.setMinimumHeight(30)
 user_input_textbox.setMaximumHeight(30)
 user_input_textbox.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -119,6 +120,15 @@ def send_message(get_response_func=None):
     process_response(response_area_textbox, prompt, get_response_func)
 
 send_button.clicked.connect(lambda: send_message)
+
+# New Chat button function. resets the conversation and clears the window
+def reset_chat():
+    print(f"Consversation history before reset: {model.conversation_history}")
+    response_area_textbox.clear()
+    model.conversation_history = []
+    print(f"Consversation history after reset: {model.conversation_history}")
+
+new_chat_button.clicked.connect(reset_chat)
 
 # Show window and start event loop (for testing)
 if __name__ == "__main__":
