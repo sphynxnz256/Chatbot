@@ -24,7 +24,6 @@ model = AutoModelForCausalLM.from_pretrained(
 conversation_history = []
 def generate_response(prompt):
     global conversation_history
-    print(f"consversation history at start of generate response: {conversation_history}")    
     # System prompt defines the bot's behavior
     system_prompt = (
         "You are an intelligent, friendly assistant who gives accurate, direct, and concise answers. "
@@ -91,7 +90,6 @@ def generate_response(prompt):
 
         # Add the assistant’s response to the conversation history
         conversation_history.append((f"assistant\n{response}"))
-        print(f"consversation history at end of generate response: {conversation_history}")
 
         return response
     except Exception as e:

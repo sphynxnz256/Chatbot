@@ -1,4 +1,5 @@
 from message_handler import process_response
+from conversation_manager import conversation_manager
 import sys
 import pywinstyles
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy, QLabel
@@ -123,10 +124,9 @@ send_button.clicked.connect(lambda: send_message)
 
 # New Chat button function. resets the conversation and clears the window
 def reset_chat():
-    print(f"Consversation history before reset: {model.conversation_history}")
     response_area_textbox.clear()
     model.conversation_history = []
-    print(f"Consversation history after reset: {model.conversation_history}")
+    conversation_manager.reset_conversation_state()
 
 new_chat_button.clicked.connect(reset_chat)
 

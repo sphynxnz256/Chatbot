@@ -1,6 +1,7 @@
 import re
 from PyQt5.QtCore import QThreadPool
 from async_utils import ThinkingTimerController, ResponseWorker
+from conversation_manager import conversation_manager
 
 # Gets the model to generate a response based on the prompt and update the response area
 def process_response(response_area_textbox, prompt, get_response_func):
@@ -43,6 +44,11 @@ def process_response(response_area_textbox, prompt, get_response_func):
 
         response_area_textbox.setHtml(updated_html)
         response_area_textbox.verticalScrollBar().setValue(response_area_textbox.verticalScrollBar().maximum())
+        
+        # If first prompt/response, create a new conversation in database
+        if conversation_manager.is_first_message():
+            conversation_manager.save_initial_message(prompt, response)
+            conversation_manager.mark_first_message_processed()
 
     # Create thinking timer instance for thinking animation
     thinking_timer = ThinkingTimerController(update_thinking_text)
