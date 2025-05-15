@@ -49,6 +49,9 @@ def process_response(response_area_textbox, prompt, get_response_func):
         if conversation_manager.is_first_message():
             conversation_manager.save_initial_message(prompt, response)
             conversation_manager.mark_first_message_processed()
+        # Else update the conversation in database
+        else:
+            conversation_manager.update_conversation_history(prompt, response)
 
     # Create thinking timer instance for thinking animation
     thinking_timer = ThinkingTimerController(update_thinking_text)

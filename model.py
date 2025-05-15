@@ -83,7 +83,7 @@ def generate_response(prompt):
             # Get text starting at the assistant marker
             response = full_response.split(assistant_marker, 1)[1]
             # Strip anything after the first <|im_end|>, even if there are multiple
-            response = re.split(r"<\|im_end\|>", response, maxsplit=1)[0]
+            response = re.split(r"<?\|im_end\|>", response, maxsplit=1)[0]
             response = response.strip()
         else:
             response = full_response.strip()
