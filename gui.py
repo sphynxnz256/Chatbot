@@ -1,14 +1,22 @@
-from message_handler import process_response
-from conversation_manager import conversation_manager
 import sys
 import pywinstyles
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy, QLabel
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QLabel, QFrame
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
+from message_handler import process_response
+from conversation_manager import conversation_manager
 from theme import theme_manager
 from placeholder_text import PlaceholderText
 from hover_button import HoverButton
-import model
+
+# Mock model for standalone testing
+if __name__ == "__main__":
+    class MockModel:
+        conversation_history = []
+    model = MockModel()
+else:
+    import model
 
 # Create application
 app = QApplication(sys.argv)
@@ -41,13 +49,26 @@ main_layout.addWidget(sidebar_widget)
 # Chatbot Name Label
 chatbot_name_label = QLabel("Chatbot")
 chatbot_name_label.setStyleSheet(f"color: {theme_manager.TEXT_COLOR};")
-chatbot_name_label.setFont(QFont("Arial", 26, QFont.Bold))
+chatbot_name_label.setFont(QFont("Arial", 28, QFont.Bold))
 sidebar_layout.addWidget(chatbot_name_label)
 
 # New Chat button
 new_chat_button = HoverButton("+ New Chat")
 new_chat_button.setFont(QFont("Arial", 12))
 sidebar_layout.addWidget(new_chat_button)
+
+# Add a divider between new chat button and the conversation buttons
+divider = QFrame()
+divider.setFrameShape(QFrame.HLine)
+divider.setStyleSheet(f"background-color: {theme_manager.TEXT_COLOR}; margin: 0px 20px")
+divider.setFixedHeight(2)
+sidebar_layout.addSpacing(10)
+sidebar_layout.addWidget(divider)
+sidebar_layout.addSpacing(10)
+
+# Add conversation buttons
+for button in conversation_manager.get_conversation_buttons():
+    sidebar_layout.addWidget(button)
 
 # Chat area container (right side)
 chat_area_widget = QWidget()
@@ -129,6 +150,11 @@ def reset_chat():
     conversation_manager.reset_conversation_state()
 
 new_chat_button.clicked.connect(reset_chat)
+
+def add_conversation_button(button):
+    sidebar_layout.addWidget(button)
+
+conversation_manager.signals.button_created.connect(add_conversation_button)
 
 # Show window and start event loop (for testing)
 if __name__ == "__main__":
