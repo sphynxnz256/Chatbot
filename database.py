@@ -48,26 +48,14 @@ def update_conversation(conversation_id, new_content):
     try:
         conn = sqlite3.connect("chatbot.db")
         cursor = conn.cursor()
-
-        # Get the current content in the conversation
-        cursor.execute('''
-            SELECT content
-            FROM conversations
-            WHERE id = ?
-            ''', (conversation_id,))
-        existing_content = cursor.fetchone()
         
-        # Update content of a conversaton with given id
-        if existing_content:
-            updated_content = f"{existing_content[0]}\n{new_content}"            
-            cursor.execute('''
-                UPDATE conversations
-                SET content = ?
-                WHERE id = ?
-                ''', (updated_content, conversation_id))
-            conn.commit()
-        else:
-            print(f"Error: Conversation with id {conversation_id} not found. Cannot update.")
+    # Update content of a conversaton with given id          
+        cursor.execute('''
+            UPDATE conversations
+            SET content = ?
+            WHERE id = ?
+            ''', (new_content, conversation_id))
+        conn.commit()
 
     except sqlite3.Error as e:
         print(f"Database Error: {e}")

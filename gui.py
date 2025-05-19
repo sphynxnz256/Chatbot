@@ -66,10 +66,6 @@ sidebar_layout.addSpacing(10)
 sidebar_layout.addWidget(divider)
 sidebar_layout.addSpacing(10)
 
-# Add conversation buttons
-for button in conversation_manager.get_conversation_buttons():
-    sidebar_layout.addWidget(button)
-
 # Chat area container (right side)
 chat_area_widget = QWidget()
 chat_area_layout = QVBoxLayout(chat_area_widget)
@@ -84,6 +80,10 @@ response_area_textbox.setStyleSheet(
     f"padding: 5px;")
 response_area_textbox.setFont(QFont("Arial", 12))
 chat_area_layout.addWidget(response_area_textbox, stretch=1)
+
+# Add conversation buttons
+for button in conversation_manager.get_conversation_buttons(response_area_textbox):
+    sidebar_layout.addWidget(button)
 
 # Input area
 input_widget = QWidget()

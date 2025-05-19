@@ -1,4 +1,4 @@
-from database import save_conversation, update_conversation, fetch_all_conversation_titles
+from database import save_conversation, update_conversation, fetch_all_conversation_titles, fetch_single_conversation
 from hover_button import HoverButton
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import pyqtSignal, QObject
@@ -37,39 +37,45 @@ class ConversationManager:
         self._is_first_message = True
 
     # Create a button for a conversation
-    def create_conversation_button(self, conversation_id, title):
+    def create_conversation_button(self, conversation_id, title, response_area_textbox):
         button = HoverButton(title)
         button.setFont(QFont("Arial", 12))
         button.conversation_id = conversation_id
         self.buttons.append(button)
+        button.clicked.connect(lambda: self.load_conversation(conversation_id, response_area_textbox))
         return button
 
     # Creates a new conversation entry in the db
-    def save_initial_message(self, prompt, response):
+    def save_initial_message(self, prompt, response_area_textbox):
         title = prompt[:20] + "..." if len(prompt) > 20 else prompt
-        conversation_content = f"User: {prompt}\nAssistant: {response}"
+        conversation_content = response_area_textbox.toHtml()
         conversation_id = save_conversation(title, conversation_content)
         self._current_conversation_id = conversation_id
-        button = self.create_conversation_button(conversation_id, title)
+        button = self.create_conversation_button(conversation_id, title, response_area_textbox)
         self.signals.button_created.emit(button)
         return conversation_id
 
     # Updates the current conversation in the db
-    def update_conversation_history(self, prompt, response):
+    def update_conversation_history(self, response_area_textbox):
         if self._current_conversation_id is not None:
-            conversation_content = f"User: {prompt}\nAssistant: {response}"
+            conversation_content = response_area_textbox.toHtml()
             update_conversation(self._current_conversation_id, conversation_content)
 
     # Creates buttons for each conversation.
-    def get_conversation_buttons(self):
+    def get_conversation_buttons(self, response_area_textbox):
         if not self.buttons:
             conversations = fetch_all_conversation_titles()
             if not conversations:
                 return self.buttons
             for conv_id, title in conversations:
-                self.create_conversation_button(conv_id, title)
+                self.create_conversation_button(conv_id, title, response_area_textbox)
         return self.buttons
-        
+
+    def load_conversation(self, conversation_id, response_area_textbox):
+        current_content = fetch_single_conversation(conversation_id)
+        response_area_textbox.clear()
+        response_area_textbox.setHtml(current_content)
+
 
 # Create a single instance of the ConversationManager
 conversation_manager = ConversationManager()
