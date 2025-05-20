@@ -4,7 +4,7 @@ from async_utils import ThinkingTimerController, ResponseWorker
 from conversation_manager import conversation_manager
 
 # Gets the model to generate a response based on the prompt and update the response area
-def process_response(response_area_textbox, prompt, get_response_func):
+def process_response(response_area_textbox, prompt, get_response_func, sidebar_layout):
     # Show temporary "Thinking..." text
     full_message = (
         f'<b>{prompt.replace("\n", "<br>")}</b><br><br>'
@@ -47,7 +47,7 @@ def process_response(response_area_textbox, prompt, get_response_func):
         
         # If first prompt/response, create a new conversation in database
         if conversation_manager.is_first_message():
-            conversation_manager.save_initial_message(prompt, response_area_textbox)
+            conversation_manager.save_initial_message(prompt, response_area_textbox, sidebar_layout)
             conversation_manager.mark_first_message_processed()
         # Else update the conversation in database
         else:

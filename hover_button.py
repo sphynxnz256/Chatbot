@@ -8,7 +8,7 @@ class HoverButton(QPushButton):
         super().__init__(text, *args, **kwargs)
         self.hover = False
         self.setStyleSheet(f"border: none; color: {theme_manager.TEXT_COLOR};"
-                           "background-color: transparent; padding: 5px 10px; text-align: left; margin: 0px 10px;")
+                           "background-color: transparent; padding: 5px 10px; text-align: left; margin: 0px 0px 10px 0px;")
         self.setCursor(Qt.PointingHandCursor)
 
     # Handles event where mouse starts hovering over button
@@ -16,7 +16,7 @@ class HoverButton(QPushButton):
         if not self.hover:
             self.setStyleSheet(
                 f"QPushButton {{background-color: {theme_manager.BUTTON_BG}; color: {theme_manager.TEXT_COLOR};" 
-                f"border-radius: 5px; padding: 5px 10px; text-align: left; margin: 0px 10px;}}"
+                f"border-radius: 5px; padding: 5px 10px; text-align: left; margin: 0px 0px 10px 0px;}}"
                 f"QPushButton:pressed {{background-color: {theme_manager.BUTTON_PRESSED_BG};"
                 f"border-radius: 5px; padding: 5px 10px; text-align: left;}}")
             self.hover = True
@@ -26,6 +26,6 @@ class HoverButton(QPushButton):
     def leaveEvent(self, event):
         if self.hover:
             self.setStyleSheet(f"border: none; color: {theme_manager.TEXT_COLOR};"
-                               "background-color: transparent; padding: 5px 10px; text-align: left; margin: 0px 10px;")
+                               "background-color: transparent; padding: 5px 10px; text-align: left; margin: 0px 0px 10px 0px;")
             self.hover = False
         super().leaveEvent(event)

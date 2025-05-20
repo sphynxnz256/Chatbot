@@ -27,6 +27,7 @@ window.setGeometry(0, 0, 800, 600)
 window.setWindowTitle("Chatbot")
 pywinstyles.apply_style(window, "dark")
 
+
 # Central widget and main layout
 central_widget = QWidget()
 window.setCentralWidget(central_widget)
@@ -82,8 +83,8 @@ response_area_textbox.setFont(QFont("Arial", 12))
 chat_area_layout.addWidget(response_area_textbox, stretch=1)
 
 # Add conversation buttons
-for button in conversation_manager.get_conversation_buttons(response_area_textbox):
-    sidebar_layout.addWidget(button)
+for buttons in conversation_manager.get_conversation_buttons(response_area_textbox, sidebar_layout):
+    sidebar_layout.addWidget(buttons)
 
 # Input area
 input_widget = QWidget()
@@ -139,7 +140,7 @@ def send_message(get_response_func=None):
     user_input_textbox.clear()
     user_input_textbox.setMaximumHeight(30)
 
-    process_response(response_area_textbox, prompt, get_response_func)
+    process_response(response_area_textbox, prompt, get_response_func, sidebar_layout)
 
 send_button.clicked.connect(lambda: send_message)
 
