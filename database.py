@@ -1,4 +1,5 @@
 import sqlite3
+import json
 
 # Function to connect to (or create) chatbot.db and ensure the conversations table exists
 def initialize_database():
@@ -10,9 +11,9 @@ def initialize_database():
         cursor.execute('''
                         CREATE TABLE IF NOT EXISTS conversations (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        title TEXT,
-                        content TEXT
-                        )
+                        title TEXT NOT NULL,
+                        content TEXT NOT NULL,
+                        model_history TEXT NOT NULL)
                         ''')
         conn.commit()
     except sqlite3.Error as e:
@@ -22,16 +23,16 @@ def initialize_database():
             conn.close()
 
 # Function to save a conversation into the database
-def save_conversation(title, history):
+def save_conversation(title, history, model_history):
     try:
         conn = sqlite3.connect("chatbot.db")
         cursor = conn.cursor()
 
         # Add a new conversation to the conversation table
         cursor.execute('''
-            INSERT INTO conversations (title, content)
-            VALUES (?, ?)
-        ''', (title, history))
+            INSERT INTO conversations (title, content, model_history)
+            VALUES (?, ?, ?)
+        ''', (title, history, json.dumps(model_history)))
 
         conversation_id = cursor.lastrowid
         conn.commit()
@@ -44,7 +45,7 @@ def save_conversation(title, history):
             conn.close()
 
 # Function to update the content of an existing conversation
-def update_conversation(conversation_id, new_content):
+def update_conversation(conversation_id, new_content, new_model_history):
     try:
         conn = sqlite3.connect("chatbot.db")
         cursor = conn.cursor()
@@ -52,9 +53,9 @@ def update_conversation(conversation_id, new_content):
     # Update content of a conversaton with given id          
         cursor.execute('''
             UPDATE conversations
-            SET content = ?
+            SET content = ?, model_history = ?
             WHERE id = ?
-            ''', (new_content, conversation_id))
+            ''', (new_content, json.dumps(new_model_history), conversation_id))
         conn.commit()
 
     except sqlite3.Error as e:
@@ -88,17 +89,19 @@ def fetch_single_conversation(conversation_id):
         cursor = conn.cursor()
 
         # Fetch a single conversation based on given id
-        cursor.execute("Select content FROM conversations WHERE id = ?", (conversation_id,))
+        cursor.execute("Select content, model_history FROM conversations WHERE id = ?", (conversation_id,))
         conversation = cursor.fetchone()
 
         if conversation:
-            return conversation[0]
+            content = conversation[0]
+            model_history = json.loads(conversation[1])
+            return content, model_history
         else:
-            return None
+            return None, []
         
     except sqlite3.Error as e:
         print(f"Database Error: {e}")
-        return None
+        return None, []
     finally:
         if conn:
             conn.close()
@@ -121,3 +124,5 @@ def delete_conversation(conversation_id):
     finally:
         if conn:
             conn.close()
+
+initialize_database()

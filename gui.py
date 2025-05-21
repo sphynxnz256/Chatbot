@@ -9,14 +9,21 @@ from conversation_manager import conversation_manager
 from theme import theme_manager
 from placeholder_text import PlaceholderText
 from hover_button import HoverButton
+from model import model_manager
 
-# Mock model for standalone testing
+
+# Mock model manager for standalone gui testing
 if __name__ == "__main__":
-    class MockModel:
-        conversation_history = []
-    model = MockModel()
+    class MockModelManager:
+        def __init__(self):
+            self.conversation_history = []
+        def generate_response(self, prompt):
+            return f"Mock response to: {prompt}"
+        def clear_history(self):
+            self.conversation_history = []
+    model_manager = MockModelManager()
 else:
-    import model
+    from model import model_manager
 
 # Create application
 app = QApplication(sys.argv)
@@ -26,7 +33,6 @@ window = QMainWindow()
 window.setGeometry(0, 0, 800, 600)
 window.setWindowTitle("Chatbot")
 pywinstyles.apply_style(window, "dark")
-
 
 # Central widget and main layout
 central_widget = QWidget()
@@ -147,7 +153,7 @@ send_button.clicked.connect(lambda: send_message)
 # New Chat button function. resets the conversation and clears the window
 def reset_chat():
     response_area_textbox.clear()
-    model.conversation_history = []
+    model_manager.clear_history()
     conversation_manager.reset_conversation_state()
 
 new_chat_button.clicked.connect(reset_chat)

@@ -1,8 +1,10 @@
+import json
 from database import save_conversation, update_conversation, fetch_all_conversation_titles, fetch_single_conversation, delete_conversation
 from hover_button import HoverButton
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QWidget, QHBoxLayout
+from model import model_manager
 
 
 class ConversationManagerSignals(QObject):
@@ -37,6 +39,7 @@ class ConversationManager:
     # Sets is first message to true (when we start a new conversation)
     def reset_conversation_state(self):
         self._is_first_message = True
+        model_manager.clear_history()
 
     # Create a button for a conversation
     def create_conversation_buttons(self, conversation_id, title, response_area_textbox, parent_layout):
@@ -66,7 +69,8 @@ class ConversationManager:
     def save_initial_message(self, prompt, response_area_textbox, parent_layout):
         title = prompt[:15] + "..." if len(prompt) > 15 else prompt
         conversation_content = response_area_textbox.toHtml()
-        conversation_id = save_conversation(title, conversation_content)
+        model_history = json.dumps(model_manager.get_history())
+        conversation_id = save_conversation(title, conversation_content, model_history)
         self._current_conversation_id = conversation_id
         button = self.create_conversation_buttons(conversation_id, title, response_area_textbox, parent_layout)
         self.signals.button_created.emit(button)
@@ -76,7 +80,8 @@ class ConversationManager:
     def update_conversation_history(self, response_area_textbox):
         if self._current_conversation_id is not None:
             conversation_content = response_area_textbox.toHtml()
-            update_conversation(self._current_conversation_id, conversation_content)
+            model_history = json.dumps(model_manager.get_history())
+            update_conversation(self._current_conversation_id, conversation_content, model_history)
 
     # Creates buttons for each conversation.
     def get_conversation_buttons(self, response_area_textbox, parent_layout):
@@ -90,10 +95,12 @@ class ConversationManager:
 
     # Loads a conversation from the database
     def load_conversation(self, conversation_id, response_area_textbox):
-        current_content = fetch_single_conversation(conversation_id)
+        current_content, model_history_json = fetch_single_conversation(conversation_id)
         response_area_textbox.clear()
         response_area_textbox.setHtml(current_content)
         self._current_conversation_id = conversation_id
+        model_manager.set_history(json.loads(model_history_json))
+        self._is_first_message = False
 
     # Removes a conversation from the database and its associated buttons
     def remove_conversation(self, conversation_id, parent_layout, response_area_textbox):

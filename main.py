@@ -1,15 +1,11 @@
 import sys
 from gui import send_message, send_button, app, window
-from model import generate_response
-from database import initialize_database
+from model import model_manager
 
 def main():
-    #initialize_database()
-    initialize_database()
-
     # Connect GUI to model
     send_button.clicked.disconnect()
-    send_button.clicked.connect(lambda: send_message(generate_response))
+    send_button.clicked.connect(lambda: send_message(model_manager.generate_response))
     window.show()
     sys.exit(app.exec_())
 
