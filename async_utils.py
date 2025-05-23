@@ -4,7 +4,7 @@ class ResponseSignals(QObject):
     finished = pyqtSignal(str)
     update_thinking = pyqtSignal(str)
 
-# Handles the timer for updating the Thinking... text
+# Manages a timer to update a "Thinking..." animation.
 class ThinkingTimerController:
     def __init__(self, update_thinking_text_func):
         self.timer = QTimer()
@@ -20,7 +20,7 @@ class ThinkingTimerController:
     def stop(self):
         self.timer.stop()
 
-    # Updates the dots in the "Thinking..." text to animate
+    # Updates the dots in the "Thinking..." text animation
     def update_thinking(self):
         self.dot_count = (self.dot_count + 1) % 4
         dots = "."*self.dot_count

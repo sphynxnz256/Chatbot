@@ -1,3 +1,5 @@
+# Manages application themes and provides access to color variables.
+# Implements a Singleton pattern to ensure only one instance exists.
 class ThemeManager:
     _instance = None
 
@@ -26,7 +28,7 @@ class ThemeManager:
         self._active_colors = self.themes[self._active_theme_name]
         self._initialized = True
 
-    # This allows selection of theme
+    # Sets the active theme for the application.
     def set_theme(self, theme_name):
         if theme_name in self.themes:
             self._active_theme_name = theme_name
@@ -34,7 +36,7 @@ class ThemeManager:
         else:
             print(f"Warning: Theme '{theme_name}' not found. Keeping '{self._active_theme_name}' theme.")
 
-    # This allows access to colors via variable names rather than dict lookups. ie. theme_manager.COLOR
+    # Allows direct access to color variables (e.g., theme_manager.TEXT_COLOR).
     def __getattr__(self, name):
         if '_active_colors' in self.__dict__ and name in self._active_colors:
             return self._active_colors[name]
@@ -43,5 +45,5 @@ class ThemeManager:
         
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}' and it's not a color key in the active theme.")
     
-# Create a single, global instance of the ThemeManager for easy accesss
+# Create a single, global instance of the ThemeManager for easy access
 theme_manager = ThemeManager()

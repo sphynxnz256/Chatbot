@@ -1,13 +1,11 @@
 import sys
-from gui import send_message, send_button, app, window
-from model import model_manager
+from gui import app, window
 
+# Main entry point for the application.
+# Connects the GUI's send button to the model's response generation and shows the main window.
 def main():
-    # Connect GUI to model
-    send_button.clicked.disconnect()
-    send_button.clicked.connect(lambda: send_message(model_manager.generate_response))
-    window.show()
-    sys.exit(app.exec_())
+    window.show() 
+    sys.exit(app.exec_()) # Start the PyQt event loop.
 
 if __name__ == "__main__":
     main()

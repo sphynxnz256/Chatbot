@@ -11,20 +11,6 @@ from placeholder_text import PlaceholderText
 from hover_button import HoverButton
 from model import model_manager
 
-
-# Mock model manager for standalone gui testing
-if __name__ == "__main__":
-    class MockModelManager:
-        def __init__(self):
-            self.conversation_history = []
-        def generate_response(self, prompt):
-            return f"Mock response to: {prompt}"
-        def clear_history(self):
-            self.conversation_history = []
-    model_manager = MockModelManager()
-else:
-    from model import model_manager
-
 # Create application
 app = QApplication(sys.argv)
 
@@ -99,7 +85,7 @@ input_layout = QVBoxLayout(input_widget)
 input_layout.setContentsMargins(0, 0, 0, 0)
 input_layout.setSpacing(0)
 
-# Text box
+# Input text box
 user_input_textbox = PlaceholderText("Ask me anything")
 user_input_textbox.setMinimumHeight(30)
 user_input_textbox.setMaximumHeight(30)
@@ -135,22 +121,20 @@ input_layout.addWidget(extension_box)
 chat_area_layout.addWidget(input_widget)
 main_layout.addWidget(chat_area_widget)
 
-# Send button functionality
-def send_message(get_response_func=None):
-    # Get user input
+# Handles sending a message: retrieves user input, clears the input box, and initiates the response processing.
+def send_message():
     prompt = user_input_textbox.toPlainText().strip()
     if not prompt: # Skip if empty
         return    
-    
-    # Reset input box
+
     user_input_textbox.clear()
     user_input_textbox.setMaximumHeight(30)
 
-    process_response(response_area_textbox, prompt, get_response_func, sidebar_layout)
+    process_response(response_area_textbox, prompt, model_manager.generate_response, sidebar_layout)
 
-send_button.clicked.connect(lambda: send_message)
+send_button.clicked.connect(lambda: send_message())
 
-# New Chat button function. resets the conversation and clears the window
+# Resets the current chat view and conversation state.
 def reset_chat():
     response_area_textbox.clear()
     model_manager.clear_history()
@@ -162,8 +146,3 @@ def add_conversation_button(button):
     sidebar_layout.addWidget(button)
 
 conversation_manager.signals.button_created.connect(add_conversation_button)
-
-# Show window and start event loop (for testing)
-if __name__ == "__main__":
-    window.show()
-    sys.exit(app.exec_())

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QTextEdit
 from theme import theme_manager
 
-# Adds placeholder text functionality to our the user text box
+# A QTextEdit subclass that displays placeholder text when it's empty and not in focus.
 class PlaceholderText(QTextEdit):
     def __init__(self, placeholder, *args, **kwargs):
         super().__init__(*args, **kwargs)

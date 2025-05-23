@@ -10,6 +10,9 @@ from model import model_manager
 class ConversationManagerSignals(QObject):
     button_created = pyqtSignal(object)
 
+
+# Manages conversation states, persistence, and UI interactions for chatbot conversations.
+# Implements a Singleton pattern to ensure only one instance exists.
 class ConversationManager:
     _instance = None
 
@@ -19,6 +22,7 @@ class ConversationManager:
             return cls._instance
 
     def __init__(self):
+        # Prevents re-initialization if the instance already exists.
         if hasattr(self, '_initialized') and self._initialized:
             return
         self._initialized = True
@@ -28,20 +32,17 @@ class ConversationManager:
         self.buttons = []
         self.signals = ConversationManagerSignals()
 
-    # Gets is first message status
     def is_first_message(self):
         return  self._is_first_message
     
-    # Sets is first message to false (once conversation is added to db)
     def mark_first_message_processed(self):
         self._is_first_message = False
 
-    # Sets is first message to true (when we start a new conversation)
     def reset_conversation_state(self):
         self._is_first_message = True
         model_manager.clear_history()
 
-    # Create a button for a conversation
+    # Creates and configures UI buttons for loading and deleting a conversation
     def create_conversation_buttons(self, conversation_id, title, response_area_textbox, parent_layout):
         buttons_widget = QWidget()
         buttons_layout = QHBoxLayout()
@@ -65,7 +66,7 @@ class ConversationManager:
         self.buttons.append(buttons_widget)        
         return buttons_widget
 
-    # Creates a new conversation entry in the db
+    # Creates a new conversation entry in the database using the first prompt and response
     def save_initial_message(self, prompt, response_area_textbox, parent_layout):
         title = prompt[:15] + "..." if len(prompt) > 15 else prompt
         conversation_content = response_area_textbox.toHtml()
@@ -76,14 +77,14 @@ class ConversationManager:
         self.signals.button_created.emit(button)
         return conversation_id
 
-    # Updates the current conversation in the db
+    # Updates the current conversation's content and model history in the database.
     def update_conversation_history(self, response_area_textbox):
         if self._current_conversation_id is not None:
             conversation_content = response_area_textbox.toHtml()
             model_history = json.dumps(model_manager.get_history())
             update_conversation(self._current_conversation_id, conversation_content, model_history)
 
-    # Creates buttons for each conversation.
+    # Creates buttons for each conversation. Used when app is first started
     def get_conversation_buttons(self, response_area_textbox, parent_layout):
         if not self.buttons:
             conversations = fetch_all_conversation_titles()
@@ -93,7 +94,7 @@ class ConversationManager:
                 self.create_conversation_buttons(conv_id, title, response_area_textbox, parent_layout)
         return self.buttons
 
-    # Loads a conversation from the database
+    # Loads a selected conversation's content and model history into the UI.
     def load_conversation(self, conversation_id, response_area_textbox):
         current_content, model_history_json = fetch_single_conversation(conversation_id)
         response_area_textbox.clear()
@@ -102,7 +103,7 @@ class ConversationManager:
         model_manager.set_history(json.loads(model_history_json))
         self._is_first_message = False
 
-    # Removes a conversation from the database and its associated buttons
+    # Loads a selected conversation's content and model history into the UI.
     def remove_conversation(self, conversation_id, parent_layout, response_area_textbox):
         delete_conversation(conversation_id)
 
@@ -113,16 +114,18 @@ class ConversationManager:
                 buttons_to_remove = buttons_widget
                 break
 
-        # Remove the buttons
+        # Remove the buttons from the list and layout
         if buttons_to_remove:
             self.buttons.remove(buttons_to_remove)
             parent_layout.removeWidget(buttons_to_remove)
             buttons_to_remove.deleteLater()
 
+        # If the removed conversation was the current one, clear the display and reset state.
         if self._current_conversation_id == conversation_id:
             response_area_textbox.clear()
             self.reset_conversation_state()
             self._current_conversation_id = None
+
 # Create a single instance of the ConversationManager
 conversation_manager = ConversationManager()
 

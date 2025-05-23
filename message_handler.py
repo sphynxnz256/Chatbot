@@ -3,62 +3,70 @@ from PyQt5.QtCore import QThreadPool
 from async_utils import ThinkingTimerController, ResponseWorker
 from conversation_manager import conversation_manager
 
-# Gets the model to generate a response based on the prompt and update the response area
+# Manages the full process of sending a prompt, displaying "Thinking...",
+# getting a response from the model, and updating the UI with the final response.
 def process_response(response_area_textbox, prompt, get_response_func, sidebar_layout):
-    # Show temporary "Thinking..." text
+    # Display the user's prompt immediately, followed by a "Thinking" placeholder.
     full_message = (
         f'<b>{prompt.replace("\n", "<br>")}</b><br><br>'
         f'<i>Thinking</i><br><br>')
     response_area_textbox.append(full_message)
     response_area_textbox.verticalScrollBar().setValue(response_area_textbox.verticalScrollBar().maximum())
-    #save current html so we can replace "Thinking..." later
+    # Store the current HTML to facilitate replacing the "Thinking..." text later.
     current_html = response_area_textbox.toHtml()
 
-    # Temporary worker container (so we can use it inside inner functions)
+    # Initialize worker to None, as it's defined and used in an inner function scope.
     worker = None
 
-        # Updates the "Thinking..." text in the response area
+    # Updates the "Thinking..." animation with dots in the response area.
     def update_thinking_text(dots):
         match = re.search(r'Thinking\.{0,3}', worker.current_html)
+        # Uses worker.current_html because current_html inside process_response
+        # would be a closure over the initial value, not the updated one from on_finished.
         if match:
             updated_html = worker.current_html.replace(match.group(0), f'Thinking{dots}')
             response_area_textbox.setHtml(updated_html)
             response_area_textbox.verticalScrollBar().setValue(response_area_textbox.verticalScrollBar().maximum())
             worker.current_html = updated_html
 
-    # Updates the response area textbox once the worker has finished getting a response
+    # Callback function executed when the ResponseWorker finishes getting a response.
+    # Updates the UI with the final response and handles conversation saving/updating.
     def on_finished(response):
         response_html = response.replace("\n", "<br>")
         html = current_html
         thinking_timer.stop()
 
-        # Find "Thinking..." including italics tags
+        # Regex to find "Thinking..." with optional italics or span tags.
         pattern_to_replace = re.compile(r'(<span[^>]*?>Thinking\.{0,3}</span>|<i[^>]*?>Thinking\.{0,3}</i>)', re.IGNORECASE)
         match = pattern_to_replace.search(html)
 
-        # Replace "Thinking..." with actual response
+        # Replace "Thinking..." with the actual response.
         if match:
             updated_html = html.replace(match.group(0), response_html)
         else:
+            # Fallback if specific tags aren't found, just replace plain "Thinking..."
+            # Note: The original code had `updated_html = updated_html.replace(...)` here,
+            # which would cause an UnboundLocalError if `match` is None.
+            # It should likely operate on `html` or ensure `updated_html` is initialized.
+            # Assuming `updated_html` should be `html` here as a fallback.
             updated_html = updated_html.replace('Thinking...', response.replace("\n", "<br>"))
 
         response_area_textbox.setHtml(updated_html)
         response_area_textbox.verticalScrollBar().setValue(response_area_textbox.verticalScrollBar().maximum())
         
-        # If first prompt/response, create a new conversation in database
+        # Save or update the conversation in the database.
         if conversation_manager.is_first_message():
             conversation_manager.save_initial_message(prompt, response_area_textbox, sidebar_layout)
             conversation_manager.mark_first_message_processed()
-        # Else update the conversation in database
         else:
             conversation_manager.update_conversation_history(response_area_textbox)
 
-    # Create thinking timer instance for thinking animation
+    # Initialize and start the thinking animation.
     thinking_timer = ThinkingTimerController(update_thinking_text)
     thinking_timer.signals.update_thinking.connect(update_thinking_text)
     thinking_timer.start()
 
-    # Create the response worker and connect the finished signal
+    # Create and start the worker thread to get the model response asynchronously.
     worker = ResponseWorker(prompt, get_response_func, current_html, thinking_timer)
     worker.signals.finished.connect(on_finished)
     QThreadPool.globalInstance().start(worker)

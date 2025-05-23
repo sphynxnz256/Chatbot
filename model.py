@@ -9,6 +9,8 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_compute_dtype=torch.float16,
 )
 
+# Manages the AI model, tokenizer, conversation history, and response generation.
+# Implements a Singleton pattern to ensure only one instance exists.
 class ModelManager:
     _instance = None
     MAX_CONTEXT_TOKENS = 8192
@@ -19,6 +21,7 @@ class ModelManager:
         return cls._instance
     
     def __init__(self):
+        # Prevents re-initialization if the instance already exists.
         if hasattr(self, '_initialized') and self._initialized:
             return
         self._initialized = True
@@ -49,25 +52,23 @@ class ModelManager:
 
         self.conversation_history = []
 
-    # Sets the conversation history, ie when loading from the db
     def set_history(self, history):
         self.conversation_history = history
 
-    # Gets the current history
     def get_history(self):
         return self.conversation_history
     
-    # Clear the conversation history
     def clear_history(self):
         self.conversation_history = []
     
-    # Generate a response from a prompt using the instance's history
+    # Generates a response from the model based on the given prompt and current conversation history.
+    # Manages context window by trimming old messages if necessary.
     def generate_response(self, prompt):
         try:
             # Add the new user prompt to the conversation history
             self.conversation_history.append((f"user\n{prompt}"))
 
-            # Building the formatted prompt from the conversation history
+            # Helper function to build the formatted prompt and count its tokens.
             def _build_and_count_prompt(history):
                 prompt_list = [f"<|im_start|>system\n{self.system_prompt}<|im_end>"]
                 for item in history:
@@ -80,9 +81,10 @@ class ModelManager:
             
             formatted_prompt, token_count = _build_and_count_prompt(self.conversation_history)
 
-            # Check token length, trim if too long
+            # Trim conversation history from the earliest entries if it exceeds MAX_CONTEXT_TOKENS.
             while token_count > self.MAX_CONTEXT_TOKENS:
-                # Remove the earliest prompt-response pair (first in history)
+                # Remove the earliest prompt-response pair (first in history).
+                # This assumes history is always added in pairs or at least oldest first.
                 self.conversation_history.pop(0)
                 formatted_prompt, token_count = _build_and_count_prompt(self.conversation_history)
 
@@ -97,16 +99,14 @@ class ModelManager:
                 pad_token_id=self.tokenizer.eos_token_id,          
             )
 
-            # Decode and extract assistant's response
+            # Decode and extract assistant's response from the full model output.
             full_response = self.tokenizer.decode(outputs[0], skip_special_tokens=False)
 
             # Extract text after <|im_start|>assistant and before <|im_end|>
             assistant_marker = "<|im_start|>assistant"
 
-            if assistant_marker in full_response:
-                # Get text starting at the assistant marker
+            if assistant_marker in full_response:        
                 response = full_response.split(assistant_marker, 1)[1]
-                # Strip anything after the first <|im_end|>, even if there are multiple
                 response = re.split(r"<?\|im_end\|>", response, maxsplit=1)[0]
                 response = response.strip()
             else:
